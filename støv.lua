@@ -56,14 +56,14 @@ local function params_init()
       end
    )
 
-   params:add_control("level", "level", controlspec.new(0, 1, "db", 0.01, 0.2))
+   params:add_control("level", "level", controlspec.new(0, 1, "db", 0.01, 0.5))
    params:set_action("level",
       function(val)
          engine.level(val)
       end
    )
 
-   params:add_control("cutoff", "cutoff", controlspec.new(1, 20000, "exp", 1, 20000, "hz"))
+   params:add_control("cutoff", "cutoff", controlspec.new(1, 20000, "exp", 1, 172, "hz"))
    params:set_action("cutoff",
       function(val)
          cutoff = val / 20000
@@ -71,7 +71,7 @@ local function params_init()
       end
    )
 
-   params:add_control("shift", "shift", controlspec.new(-1, 1, "lin", 0.01, 0))
+   params:add_control("shift", "shift", controlspec.new(-1, 1, "lin", 0.01, -0.5))
    params:set_action("shift",
       function(val)
          shift = val
@@ -82,7 +82,7 @@ local function params_init()
       end
    )
    
-   params:add_control("size", "size", controlspec.new(0.001, 1, "exp", 0.001, 2))
+   params:add_control("size", "size", controlspec.new(0.001, 1, "exp", 0.001, 0.47))
    params:set_action("size",
       function(val)
          size = val
