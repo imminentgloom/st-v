@@ -45,7 +45,7 @@ end
 local function params_init()
    params:add_group("støv", "STØV", 5)
 
-   params:add_option("mode", "E1", {"level", "cutoff"}, 1)
+   params:add_option("mode", "E1", {"level", "cutoff"}, 2)
    params:set_action("mode",
       function(val)
          if val == 1 then
