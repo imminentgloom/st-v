@@ -7,7 +7,7 @@
 filtered noise into window comparator  
 
 ```  
-v1.0  
+v1.1  
 ```
 
 requires norns  
