@@ -6,7 +6,7 @@
 --
 --
 -- ...
--- v1.0 / imminent gloom 
+-- v1.1 / imminent gloom 
 -- 
 -- noise into
 -- window comparator
@@ -24,8 +24,11 @@ local save_on_exit = true
 
 local s = screen
 local splash = false
-local splash_br = 0
+local splash_level = 0
 
+local fps = 15
+
+local cutoff = 1
 local shift = 0
 local size = 2
 local min = -1
@@ -35,35 +38,31 @@ local max = 1
 -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
 
 local function get_min()
-   min = util.clamp(shift - size, - 1, 1)
+   return util.clamp(shift - size, - 1, 1)
 end
 
 local function get_max()
-   max = util.clamp(shift + size, - 1, 1)
+   return util.clamp(shift + size, - 1, 1)
 end
 
 local function params_init()
-   params:add_group("støv", "STØV", 5)
+   params:add_group("støv", "STØV", 6)
 
    params:add_option("mode", "E1", {"level", "cutoff"}, 2)
    params:set_action("mode",
       function(val)
-         if val == 1 then
-            e1_mode = "level"
-         else
-            e1_mode = "cutoff"
-         end
+         e1_mode = val == 1 and "level" or "cutoff"
       end
    )
 
-   params:add_control("level", "level", controlspec.new(0, 1, "db", 0.01, 0.5))
+   params:add_control("level", "level", controlspec.new(0, 1, "db", 0.01, 0.2))
    params:set_action("level",
       function(val)
          engine.level(val)
       end
    )
 
-   params:add_control("cutoff", "cutoff", controlspec.new(1, 20000, "exp", 1, 172, "hz"))
+   params:add_control("cutoff", "cutoff", controlspec.new(1, 20000, "exp", 1, 20000, "hz"))
    params:set_action("cutoff",
       function(val)
          cutoff = val / 20000
@@ -71,25 +70,28 @@ local function params_init()
       end
    )
 
-   params:add_control("shift", "shift", controlspec.new(-1, 1, "lin", 0.01, -0.5))
+   params:add_control("shift", "shift", controlspec.new(-1, 1, "lin", 0.01, 0))
    params:set_action("shift",
       function(val)
          shift = val
-         get_min()
-         get_max()
-         engine.min(min)
-         engine.max(max)
+         engine.min(get_min())
+         engine.max(get_max())
       end
    )
-   
-   params:add_control("size", "size", controlspec.new(0.001, 1, "exp", 0.001, 0.47))
+
+   params:add_control("size", "size", controlspec.new(0.001, 1, "exp", 0.001, 2))
    params:set_action("size",
       function(val)
          size = val
-         get_min()
-         get_max()
-         engine.min(min)
-         engine.max(max)
+         engine.min(get_min())
+         engine.max(get_max())
+      end
+   )
+   
+   params:add_number("fps", "fps", 15, 240, 15)
+   params:set_action("fps",
+      function(val)
+         fps = val         
       end
    )
 end
@@ -100,16 +102,16 @@ end
 local function draw_event()
    while true do
       redraw()
-      clock.sleep(1/16)
+      clock.sleep(1/fps)
    end
 end
 
 local function splash_event()
    splash = true
-   splash_br = 15
-   while splash_br > 0 do
+   splash_level = 15
+   while splash_level > 0 do
       clock.sleep(0.1)
-      splash_br = splash_br - 1
+      splash_level = splash_level - 1
    end
    splash = false
 end
@@ -143,10 +145,12 @@ end
 -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
 
 function enc(n, d)
-   if n == 1 and e1_mode == "level" then
-      params:delta("level", d)
-   elseif n == 1 and e1_mode == "cutoff" then
-      params:delta("cutoff", d)
+   if n == 1 then
+      if e1_mode == "level" then
+         params:delta("level", d)
+      else
+         params:delta("cutoff", d)
+      end
    end
 
    if n == 2 then
@@ -164,22 +168,24 @@ end
 function redraw()   
    local shift = 64 + math.floor(shift * 64)
    local size = math.floor(size * 64)
-
+   local min = util.clamp(shift - size, 0, 127)
+   local max = util.clamp(shift + size, 0, 127)
+   
    s.clear()
-  
+   
    s.level(15)
-   for x = util.clamp(shift - size, 0, 127), util.clamp(shift - size + (size * 2), 0, 127) do
+   for x = min, max do
       for y = 0, 63 do
          if math.random() < cutoff * 0.5 then
             s.pixel(x, y)
-            s.fill()
          end
       end
    end
+   s.fill()
 
    if splash then
       s.blend_mode(4)
-      s.level(splash_br)
+      s.level(splash_level)
       s.move(3, 48)
       s.font_face(11)
       s.font_size(60)
